@@ -41,7 +41,6 @@ function handleCredentialResponse(response) {
 
 // 2. Inizializza il client API di Google
 function initClient() {
-    alert('init') ;
     gapi.client.init({
         clientId: CLIENT_ID,
         scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file', // Richiesta di permesso
@@ -65,7 +64,7 @@ function initClient() {
             loadTransactionsFromSheets(); 
         });
     }, function(error) {
-        console.error("Errore durante l'inizializzazione di gapi:", error);
+      alert(error); console.error("Errore durante l'inizializzazione di gapi:", error);
     });
 }
 
