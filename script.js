@@ -31,57 +31,66 @@ const appInterfaceEl = document.getElementById('app-interface');
 // =======================================================
 // === LOGICA DI AUTENTICAZIONE E INIZIALIZZAZIONE API ===
 // =======================================================
-
-// 1. Funzione chiamata dal widget GSI dopo il login di successo
+// 1. Funzione chiamata dal widget GSI dopo l'autenticazione dell'utente (ID Token ricevuto)
 function handleCredentialResponse(response) {
     if (response.credential) {
+        // La fase 1 (Autenticazione ID) è completata. Carichiamo la libreria GAPI
         gapi.load('client', initClient);
     }
 }
 
-// 2. Inizializza il client API di Google
+// 2. Inizializza il client GAPI e il client per l'autorizzazione (Access Token)
 function initClient() {
+    // Inizializza GAPI client (non l'autenticazione)
     gapi.client.init({
-        clientId: CLIENT_ID,
-        scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file', // Richiesta di permesso
+        // Non passiamo clientId o scope qui, lo farà tokenClient
         discoveryDocs: [
             "https://sheets.googleapis.com/$discovery/rest?version=v4",
-            "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest" // Discovery per Drive API
+            "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest" 
         ],
     }).then(function () {
-        alert('then') ;
-        // Esegui il login se non già connesso e ottieni il token
-        gapi.auth2.getAuthInstance().signIn().then(function() {
-            // Ottieni il token di accesso reale
-            gapi_token = gapi.auth2.getAuthInstance().currentUser.get().getAuthResponse().access_token;
-            
-            isLoggedIn = true;
-            authStatusEl.textContent = 'Connesso e API pronte!';
-            authStatusEl.style.color = '#2ecc71';
-            appInterfaceEl.style.display = 'block';
-            alert('carico...') ;
-            // Carica i dati non appena l'accesso è completo
-            loadTransactionsFromSheets(); 
-        });
-    }, function(error) {
-         console.error("Errore durante l'inizializzazione di gapi:", error);
-         let errorMessage = "Errore sconosciuto durante l'inizializzazione.";
         
-        // Tentativo di estrarre il messaggio da gapi
+        // 3. Inizializza il Token Client (GSI) per richiedere l'Access Token e gli SCOPE
+        tokenClient = google.accounts.oauth2.initTokenClient({
+            client_id: CLIENT_ID,
+            scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file',
+            callback: (tokenResponse) => {
+                // Funzione eseguita quando l'utente autorizza gli scope
+                if (tokenResponse && tokenResponse.access_token) {
+                    
+                    // 4. Imposta l'Access Token nella libreria GAPI per le chiamate API
+                    gapi.client.setToken({ access_token: tokenResponse.access_token });
+                    gapi_token = tokenResponse.access_token; 
+                    
+                    isLoggedIn = true;
+                    authStatusEl.textContent = 'Connesso e API pronte!';
+                    authStatusEl.style.color = '#2ecc71';
+                    appInterfaceEl.style.display = 'block';
+                    
+                    loadTransactionsFromSheets(); 
+                } else {
+                    alert("Autorizzazione API (Access Token) fallita o token non ricevuto.");
+                }
+            },
+        });
+        
+        // 5. Richiede l'Access Token (mostrando il popup di autorizzazione degli scope)
+        tokenClient.requestAccessToken();
+        
+    }, function(error) {
+        // Errore di inizializzazione GAPI (es. discovery docs errati)
+        let errorMessage = "Errore sconosciuto durante l'inizializzazione.";
         if (error && error.details) {
-             // A volte l'errore è contenuto qui
              errorMessage = error.details;
-        } else if (error && error.error && error.error.message) {
-             // Altre volte è qui (meno comune per init, più comune per le chiamate API)
-             errorMessage = error.error.message;
-        } else if (typeof error === 'string') {
-             errorMessage = error;
+        } else if (error && error.message) {
+             errorMessage = error.message;
         }
         
-        // Mostra un alert pulito all'utente
-        alert(`ERRORE INIZIALIZZAZIONE: Per favore verifica la console del browser per i dettagli.\n${errorMessage}`);
+        alert(`ERRORE INIZIALIZZAZIONE GAPI:\n${errorMessage}`);
     });
 }
+
+
 
 // =======================================================
 // === FUNZIONI GOOGLE SHEETS (LETURA E SCRITTURA) ===
