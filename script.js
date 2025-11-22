@@ -1,5 +1,5 @@
 // Aggiungi questa variabile all'inizio di script.js
-const CLIENT_ID = 'https://198577538752-vc5aa0dshsflvqlnt221oig3h1451hao.apps.googleusercontent.com';
+const CLIENT_ID = '198577538752-vc5aa0dshsflvqlnt221oig3h1451hao.apps.googleusercontent.com';
 let gapi_token = null; // Il token d'accesso che useremo per le Sheets API
 
 
