@@ -1,3 +1,81 @@
+// Aggiungi questa variabile all'inizio di script.js
+const CLIENT_ID = 'https://198577538752-vc5aa0dshsflvqlnt221oig3h1451hao.apps.googleusercontent.com';
+let gapi_token = null; // Il token d'accesso che useremo per le Sheets API
+
+
+// QUESTA FUNZIONE SOSTITUISCE L'EVENTO CLICK SIMULATO DEL TUO VECCHIO PULSANTE
+// Viene richiamata automaticamente dal widget di Google dopo il login
+function handleCredentialResponse(response) {
+    if (response.credential) {
+        // Usa il token ID per ottenere il token di accesso necessario per le API
+        const id_token = response.credential;
+        
+        // Inizializza l'SDK di Google API (gapi)
+        gapi.load('client', initClient);
+    }
+}
+
+function initClient() {
+    gapi.client.init({
+        clientId: CLIENT_ID,
+        scope: 'https://www.googleapis.com/auth/spreadsheets', // Richiedi lo scope per Sheets
+        discoveryDocs: ["https://sheets.googleapis.com/$discovery/rest?version=v4"],
+    }).then(function () {
+        // Esegui il login se non già connesso e ottieni il token
+        gapi.auth2.getAuthInstance().signIn().then(function() {
+            gapi_token = gapi.auth2.getAuthInstance().currentUser.get().getAuthResponse().access_token;
+            
+            isLoggedIn = true;
+            document.getElementById('auth-status').textContent = 'Connesso e API pronte!';
+            document.getElementById('auth-status').style.color = '#2ecc71';
+            document.getElementById('app-interface').style.display = 'block';
+            
+            loadTransactionsFromSheets(); // Ora puoi chiamare questa funzione vera!
+        });
+    }, function(error) {
+        console.error("Errore durante l'inizializzazione di gapi:", error);
+    });
+}
+
+// ... il resto del tuo codice di script.js
+
+// AGGIORNA LA FUNZIONE DI SALVATAGGIO PER USARE LE API REALI
+function saveTransactionToSheets(transaction) {
+    if (!gapi_token) return;
+
+    // Sostituisci con l'ID del tuo FOGLIO GOOGLE
+    const SPREADSHEET_ID = 'IL_TUO_ID_FOGLIO_DI_CALCOLO'; 
+    const RANGE = 'A1:D1'; // La colonna in cui scriverai
+
+    const values = [
+        [
+            new Date().toISOString(), 
+            transaction.description, 
+            transaction.amount.toFixed(2), 
+            transaction.type
+        ]
+    ];
+    
+    const body = {
+        values: values
+    };
+
+    gapi.client.sheets.spreadsheets.values.append({
+        spreadsheetId: SPREADSHEET_ID,
+        range: RANGE,
+        valueInputOption: 'USER_ENTERED',
+        resource: body
+    }).then((response) => {
+        console.log('Transazione salvata:', response.result);
+    }, (error) => {
+        console.error('Errore nel salvataggio su Sheets:', error);
+    });
+}
+
+
+
+
+
 // VARIABILI GLOBALI
 let transactions = [];
 let isLoggedIn = false;
@@ -17,7 +95,7 @@ const googleLoginBtn = document.getElementById('google-login-btn');
 
 
 // --- LOGICA DI AUTENTICAZIONE (SIMULATA) ---
-
+/*
 googleLoginBtn.addEventListener('click', () => {
     // In una vera app, qui si attiverebbe la finestra di Google Sign-In.
     // Una volta ricevuta la risposta di successo (e il token di accesso),
@@ -53,7 +131,7 @@ function loadTransactionsFromSheets() {
         { id: 3, description: 'Cibo', amount: -120.00, type: 'expense' }
     ];
     updateUI();
-}
+}*/
 
 // FUNZIONE PRINCIPALE PER L'AGGIUNTA DI TRANSAZIONI
 addBtn.addEventListener('click', () => {
@@ -93,7 +171,7 @@ addBtn.addEventListener('click', () => {
 function generateID() {
     return transactions.length > 0 ? Math.max(...transactions.map(t => t.id)) + 1 : 1;
 }
-
+/*
 // FUNZIONE PLACEHOLDER PER GOOGLE SHEETS (SALVATAGGIO)
 function saveTransactionToSheets(transaction) {
     // QUI DOVRESTI INSERIRE LA LOGICA PER INVIARE LA NUOVA RIGA
@@ -106,7 +184,7 @@ function saveTransactionToSheets(transaction) {
     ];
     gapi.client.sheets.spreadsheets.values.append({...});
     */
-}
+}*/
 
 
 // --- GESTIONE INTERFACCIA UTENTE ---
