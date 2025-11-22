@@ -218,22 +218,58 @@ async function getOrCreateSheetId() {
     }
 }
 
-// FUNZIONE REALE PER IL CARICAMENTO (GET)
-function loadTransactionsFromSheets() {
-    // QUI DEVI IMPLEMENTARE LA LOGICA REALE PER LEGGERE I DATI.
-    // Per ora, useremo i dati di esempio per non rompere l'interfaccia.
 
-    console.log('Simulazione: Caricamento dati di esempio...');
+async function loadTransactionsFromSheets() {
+    // 1. Ottieni o crea l'ID del foglio corrente
+    const sheetId = await getOrCreateSheetId();
     
-    // Dati di esempio (placeholder)
-    transactions = [
-        { id: 1, description: 'Stipendio', amount: 1500.00, type: 'income' },
-        { id: 2, description: 'Affitto', amount: -650.00, type: 'expense' },
-        { id: 3, description: 'Cibo', amount: -120.00, type: 'expense' }
-    ];
+    if (!sheetId) {
+        transactions = []; // Nessun ID, nessun dato
+        updateUI();
+        return;
+    }
     
+    // Leggiamo i dati dal Foglio1, partendo dalla riga 2 (dopo le intestazioni)
+    const RANGE = 'Foglio1!A2:D'; 
+
+    try {
+        const response = await gapi.client.sheets.spreadsheets.values.get({
+            spreadsheetId: sheetId,
+            range: RANGE,
+        });
+
+        const rows = response.result.values;
+        
+        if (rows && rows.length) {
+            // Trasforma i dati in righe nell'oggetto 'transactions'
+            transactions = rows.map((row, index) => {
+                const amount = parseFloat(row[2]); // L'importo è nella colonna C (indice 2)
+                const type = row[3] ? row[3].toLowerCase() : 'expense'; // Tipo è nella colonna D (indice 3)
+                
+                return {
+                    // Usiamo index come ID temporaneo. In produzione è meglio un ID univoco.
+                    id: index + 1, 
+                    description: row[1] || 'N/D',
+                    amount: amount, // L'importo deve già essere negativo per le uscite
+                    type: type
+                };
+            });
+            console.log(`✅ Caricati ${transactions.length} transazioni da Sheets.`);
+        } else {
+            console.log('Foglio vuoto: Nessuna transazione trovata.');
+            transactions = [];
+        }
+
+    } catch (error) {
+        console.error("❌ Errore nella lettura da Sheets:", error);
+        alert("Errore di lettura dati: Impossibile recuperare le transazioni dal Foglio Google.");
+        transactions = [];
+    }
+    
+    // Infine, aggiorna l'interfaccia con i dati (anche se vuoti)
     updateUI();
 }
+
 
 
 // =======================================================
