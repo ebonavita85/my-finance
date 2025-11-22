@@ -13,6 +13,7 @@ const SPREADSHEET_ID = 'IL_TUO_ID_FOGLIO_DI_CALCOLO'; // <<< DA SOSTITUIRE
 
 let transactions = [];
 let isLoggedIn = false;
+let currentSpreadsheetId = null;
 
 // Elementi DOM
 const list = document.getElementById('list');
@@ -42,8 +43,11 @@ function handleCredentialResponse(response) {
 function initClient() {
     gapi.client.init({
         clientId: CLIENT_ID,
-        scope: 'https://www.googleapis.com/auth/spreadsheets', // Richiesta di permesso
-        discoveryDocs: ["https://sheets.googleapis.com/$discovery/rest?version=v4"],
+        scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file', // Richiesta di permesso
+        discoveryDocs: [
+            "https://sheets.googleapis.com/$discovery/rest?version=v4",
+            "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest" // Discovery per Drive API
+        ],
     }).then(function () {
         // Esegui il login se non già connesso e ottieni il token
         gapi.auth2.getAuthInstance().signIn().then(function() {
@@ -68,6 +72,40 @@ function initClient() {
 // =======================================================
 
 // FUNZIONE REALE PER IL SALVATAGGIO (APPEND)
+async function saveTransactionToSheets(transaction) {
+    if (!gapi_token) return;
+
+    // Assicurati che l'ID del foglio sia disponibile
+    const sheetId = await getOrCreateSheetId();
+    if (!sheetId) return;
+
+    const RANGE = 'Foglio1!A:D'; 
+
+    const values = [
+        [
+            new Date().toISOString(), 
+            transaction.description, 
+            transaction.amount.toFixed(2), 
+            transaction.type
+        ]
+    ];
+    
+    const body = { values: values };
+
+    gapi.client.sheets.spreadsheets.values.append({
+        spreadsheetId: sheetId, // Usa l'ID dinamico
+        range: RANGE,
+        valueInputOption: 'USER_ENTERED',
+        insertDataOption: 'INSERT_ROWS',
+        resource: body
+    }).then((response) => {
+        console.log('Transazione salvata:', response.result);
+    }, (error) => {
+        console.error('Errore nel salvataggio su Sheets:', error);
+    });
+}
+
+/*
 function saveTransactionToSheets(transaction) {
     if (!gapi_token || SPREADSHEET_ID === 'IL_TUO_ID_FOGLIO_DI_CALCOLO') {
         console.warn('Impossibile salvare: ID FOGLIO non impostato o token non disponibile.');
@@ -102,7 +140,58 @@ function saveTransactionToSheets(transaction) {
         console.error('Errore nel salvataggio su Sheets:', error);
     });
 }
+*/
 
+async function getOrCreateSheetId() {
+    if (currentSpreadsheetId) return currentSpreadsheetId;
+    
+    const currentYear = new Date().getFullYear();
+    const sheetTitle = `Dati Finanziari ${currentYear}`;
+    
+    // 1. Cerca il foglio esistente
+    try {
+        const searchResponse = await gapi.client.drive.files.list({
+            q: `mimeType='application/vnd.google-apps.spreadsheet' and name='${sheetTitle}' and trashed=false`,
+            fields: 'files(id, name)'
+        });
+        
+        const files = searchResponse.result.files;
+        if (files.length > 0) {
+            // Trovato! Usa il primo
+            currentSpreadsheetId = files[0].id;
+            console.log(`Foglio trovato: ${sheetTitle}`);
+            return currentSpreadsheetId;
+        }
+    } catch (error) {
+        console.error("Errore nella ricerca del foglio Drive:", error);
+        // Continua provando a creare
+    }
+
+    // 2. Se non trovato, crea un nuovo foglio
+    try {
+        const createResponse = await gapi.client.sheets.spreadsheets.create({
+            properties: {
+                title: sheetTitle
+            }
+        });
+
+        currentSpreadsheetId = createResponse.result.spreadsheetId;
+        console.log(`Foglio creato: ${sheetTitle}`);
+        
+        // OPZIONALE: Aggiungi intestazioni al nuovo foglio
+        await gapi.client.sheets.spreadsheets.values.update({
+             spreadsheetId: currentSpreadsheetId,
+             range: 'A1:D1',
+             valueInputOption: 'USER_ENTERED',
+             values: [['Data', 'Descrizione', 'Importo', 'Tipo']]
+        });
+        
+        return currentSpreadsheetId;
+    } catch (error) {
+        console.error("Errore nella creazione del foglio Sheets:", error);
+        return null; 
+    }
+}
 
 // FUNZIONE REALE PER IL CARICAMENTO (GET)
 function loadTransactionsFromSheets() {
