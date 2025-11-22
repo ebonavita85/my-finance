@@ -64,7 +64,22 @@ function initClient() {
             loadTransactionsFromSheets(); 
         });
     }, function(error) {
-      alert(error); console.error("Errore durante l'inizializzazione di gapi:", error);
+         console.error("Errore durante l'inizializzazione di gapi:", error);
+         let errorMessage = "Errore sconosciuto durante l'inizializzazione.";
+        
+        // Tentativo di estrarre il messaggio da gapi
+        if (error && error.details) {
+             // A volte l'errore è contenuto qui
+             errorMessage = error.details;
+        } else if (error && error.error && error.error.message) {
+             // Altre volte è qui (meno comune per init, più comune per le chiamate API)
+             errorMessage = error.error.message;
+        } else if (typeof error === 'string') {
+             errorMessage = error;
+        }
+        
+        // Mostra un alert pulito all'utente
+        alert(`ERRORE INIZIALIZZAZIONE: Per favore verifica la console del browser per i dettagli.\n${errorMessage}`);
     });
 }
 
