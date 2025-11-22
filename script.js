@@ -41,6 +41,7 @@ function handleCredentialResponse(response) {
 
 // 2. Inizializza il client API di Google
 function initClient() {
+    alert('init') ;
     gapi.client.init({
         clientId: CLIENT_ID,
         scope: 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file', // Richiesta di permesso
@@ -49,6 +50,7 @@ function initClient() {
             "https://www.googleapis.com/discovery/v1/apis/drive/v3/rest" // Discovery per Drive API
         ],
     }).then(function () {
+        alert('then') ;
         // Esegui il login se non già connesso e ottieni il token
         gapi.auth2.getAuthInstance().signIn().then(function() {
             // Ottieni il token di accesso reale
@@ -58,7 +60,7 @@ function initClient() {
             authStatusEl.textContent = 'Connesso e API pronte!';
             authStatusEl.style.color = '#2ecc71';
             appInterfaceEl.style.display = 'block';
-            
+            alert('carico...') ;
             // Carica i dati non appena l'accesso è completo
             loadTransactionsFromSheets(); 
         });
