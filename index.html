@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestore Finanziario Mensile</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <header>
+        <h1>💵 Gestore Finanziario Mensile</h1>
+    </header>
+
+    <div class="container">
+
+        <section id="auth-section">
+            <h2>Accedi con Google</h2>
+            <p>Questa app richiede l'accesso al tuo account Google per salvare i dati su Google Sheets.</p>
+            <button id="google-login-btn">Accedi con Google (Simulato)</button>
+            <p id="auth-status" class="status-message">Disconnesso</p>
+        </section>
+        
+        <hr>
+
+        <section id="app-interface" style="display:none;">
+
+            <div id="balance-summary">
+                <h3>Saldo Totale: <span id="balance">€ 0.00</span></h3>
+                <div class="summary-details">
+                    <p class="income-box">Entrate: <span id="total-income">€ 0.00</span></p>
+                    <p class="expense-box">Uscite: <span id="total-expense">€ 0.00</span></p>
+                </div>
+            </div>
+
+            <div id="transaction-form">
+                <h2>Aggiungi Transazione</h2>
+                <input type="text" id="description" placeholder="Descrizione (es. Stipendio, Affitto)" required>
+                <input type="number" id="amount" placeholder="Importo (es. 1200.50)" step="0.01" required>
+                <select id="type">
+                    <option value="income">Entrata (+)</option>
+                    <option value="expense">Uscita (-)</option>
+                </select>
+                <button id="add-btn">Aggiungi</button>
+            </div>
+
+            <div id="transactions-list">
+                <h2>Cronologia Transazioni</h2>
+                <ul id="list">
+                    </ul>
+            </div>
+            
+        </section>
+
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
