@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestore Finanziario Mensile</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js"></script> 
+
 </head>
 <body>
 
@@ -17,7 +20,23 @@
         <section id="auth-section">
             <h2>Accedi con Google</h2>
             <p>Questa app richiede l'accesso al tuo account Google per salvare i dati su Google Sheets.</p>
-            <button id="google-login-btn">Accedi con Google (Simulato)</button>
+            <!--<button id="google-login-btn">Accedi con Google (Simulato)</button>-->
+            <div id="g_id_onload"
+     data-client_id="https://198577538752-vc5aa0dshsflvqlnt221oig3h1451hao.apps.googleusercontent.com" 
+     data-callback="handleCredentialResponse"
+     data-auto_prompt="false">
+</div>
+<div class="g_id_signin"
+     data-type="standard"
+     data-size="large"
+     data-theme="outline"
+     data-text="sign_in_with"
+     data-shape="rectangular"
+     data-logo_alignment="left">
+</div>
+
+            
+            
             <p id="auth-status" class="status-message">Disconnesso</p>
         </section>
         
