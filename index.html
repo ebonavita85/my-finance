@@ -51,7 +51,7 @@
                     <p class="expense-box">Uscite: <span id="total-expense">€ 0.00</span></p>
                 </div>
             </div>
-
+<!--
             <div id="transaction-form">
                 <h2>Aggiungi Transazione</h2>
                 <input type="text" id="description" placeholder="Descrizione (es. Stipendio, Affitto)" required>
@@ -62,7 +62,51 @@
                 </select>
                 <button id="add-btn">Aggiungi</button>
             </div>
+-->
 
+<form id="transaction-form">
+    <h3>Aggiungi Nuova Transazione</h3>
+
+    <div class="form-control">
+        <label for="text">Descrizione</label>
+        <input type="text" id="text" placeholder="Nome transazione..." required />
+    </div>
+
+    <div class="form-control">
+        <label for="category">Categoria</label>
+        <select id="category" required>
+            <option value="" disabled selected>Seleziona Categoria</option>
+            <option value="Casa">Casa (Affitto, Bollette)</option>
+            <option value="Auto/Trasporti">Auto/Trasporti</option>
+            <option value="Cibo/Spesa">Cibo/Spesa</option>
+            <option value="Shopping/Abbigliamento">Shopping/Abbigliamento</option>
+            <option value="Tempo Libero/Svago">Tempo Libero/Svago</option>
+            <option value="Salute">Salute</option>
+            <option value="Stipendio/Investimenti">Stipendio/Investimenti</option>
+            <option value="Altro">Altro</option>
+        </select>
+    </div>
+
+    <div class="form-control-radio">
+        <label>Tipo di Transazione</label>
+        <div>
+            <input type="radio" id="type-expense" name="transaction-type" value="expense" checked required>
+            <label for="type-expense" class="radio-expense">Uscita</label>
+
+            <input type="radio" id="type-income" name="transaction-type" value="income" required>
+            <label for="type-income" class="radio-income">Entrata</label>
+        </div>
+    </div>
+
+    <div class="form-control">
+        <label for="amount">Importo (€) </label>
+        <input type="number" id="amount" placeholder="Inserisci importo..." step="0.01" required />
+    </div>
+
+    <button class="btn">Aggiungi transazione</button>
+</form>
+
+            
             <div id="transactions-list">
                 <h2>Cronologia Transazioni</h2>
                 <ul id="list">
