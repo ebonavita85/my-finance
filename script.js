@@ -27,6 +27,12 @@ const typeEl = document.getElementById('type');
 const addBtn = document.getElementById('add-btn');
 const authStatusEl = document.getElementById('auth-status');
 const appInterfaceEl = document.getElementById('app-interface');
+const category = document.getElementById('category'); // NUOVO
+const radioIncome = document.getElementById('type-income'); // Utile per il controllo
+const radioExpense = document.getElementById('type-expense'); // Utile per il controllo
+
+
+
 // googleLoginBtn non è più usato, il widget GSI gestisce il pulsante
 
 // =======================================================
@@ -111,6 +117,7 @@ async function saveTransactionToSheets(transaction) {
         [
             new Date().toISOString(), 
             transaction.description, 
+            transaction.category,
             transaction.amount.toFixed(2), 
             transaction.type
         ]
@@ -262,9 +269,9 @@ async function loadTransactionsFromSheets() {
                 (row[1] && row[1].trim() !== '') || (row[2] && row[2].trim() !== '')
             );
 
-            transactions = cleanRows.map((row, index) => {
-                const amount = parseFloat(row[2]); 
-                const type = row[3] ? row[3].toLowerCase() : 'expense';
+            //transactions = cleanRows.map((row, index) => {
+            //    const amount = parseFloat(row[2]); 
+             //   const type = row[3] ? row[3].toLowerCase() : 'expense';
                 
                 // Per un caricamento sicuro: riassegnare un sheetRow *solo* per le righe pulite.
                 // Il vero numero di riga nel foglio Google è:
@@ -281,15 +288,21 @@ async function loadTransactionsFromSheets() {
                 // Poiché la nostra logica di eliminazione si basa sul sheetRow, 
                 // per semplicità MANTENIAMO la mappatura originale (rows.map) 
                 // e aggiungiamo il filtro.
+
+           transactions = cleanRows.map((row, index) => {
+                const amount = parseFloat(row[3]); // 🛑 L'importo si sposta in row[3] (Colonna D)
+                const type = row[4] ? row[4].toLowerCase() : 'expense'; // 🛑 Il tipo si sposta in row[4] (Colonna E)
                 
                 return {
-                    sheetRow: 2 + rows.indexOf(row), // Trova l'indice corretto nell'array non filtrato
-                    id: index + 1, // ID temporaneo locale
-                    description: row[1] || 'N/D', // Sarà N/D se la cella era vuota
+                    sheetRow: 2 + rows.indexOf(row),
+                    id: index + 1, 
+                    description: row[1] || 'N/D',
+                    category: row[2] || 'Altro', // 🛑 NUOVO: Categoria da row[2] (Colonna C)
                     amount: amount, 
                     type: type,
                     date: row[0]
                 };
+                
             });
             console.log(`✅ Caricati ${transactions.length} transazioni (dopo il filtro).`);
             
@@ -353,6 +366,52 @@ addBtn.addEventListener('click', () => {
     descriptionEl.value = '';
     amountEl.value = '';
 });
+
+
+
+function addTransaction(e) {
+    e.preventDefault();
+
+    if (text.value.trim() === '' || amount.value.trim() === '' || category.value.trim() === '') {
+        alert('Per favore, riempi tutti i campi (Descrizione, Importo e Categoria).');
+        return;
+    }
+
+    const type = document.querySelector('input[name="transaction-type"]:checked').value;
+    let finalAmount = +amount.value;
+
+    // Gestione del segno: l'uscita è negativa, l'entrata è positiva
+    if (type === 'expense') {
+        finalAmount = -Math.abs(finalAmount); // Forza l'importo ad essere negativo
+    } else {
+        finalAmount = Math.abs(finalAmount); // Forza l'importo ad essere positivo
+    }
+    
+    // Genera un ID temporaneo (necessario per l'eliminazione locale)
+    const newId = transactions.length > 0 ? Math.max(...transactions.map(t => t.id)) + 1 : 1;
+
+    const transaction = {
+        id: newId,
+        text: text.value,
+        category: category.value, // NUOVO CAMPO
+        amount: finalAmount,
+        type: type 
+    };
+
+    // Aggiunge la transazione all'array locale e al foglio Google
+    transactions.push(transaction);
+    saveTransactionToSheets(transaction);
+    updateUI();
+
+    // Reset del form
+    text.value = '';
+    amount.value = '';
+    category.value = ''; // Reset della categoria
+    radioExpense.checked = true; // Imposta di default su 'Uscita'
+}
+
+// Assicurati che il form listener sia aggiornato
+document.getElementById('transaction-form').addEventListener('submit', addTransaction);
 
 
 // Aggiunge la transazione all'elenco DOM
