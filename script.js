@@ -14,6 +14,7 @@ const SPREADSHEET_ID = 'IL_TUO_ID_FOGLIO_DI_CALCOLO'; // <<< DA SOSTITUIRE
 let transactions = [];
 let isLoggedIn = false;
 let currentSpreadsheetId = null;
+let monthlyChartInstance = null; // Riferimento all'oggetto Chart.js
 
 // Elementi DOM
 const list = document.getElementById('list');
@@ -369,9 +370,105 @@ function removeTransaction(id) {
     console.log(`Simulazione: Transazione con ID ${id} eliminata. (Implementare DELETE/UPDATE su Sheets)`);
 }
 
+// Funzione: Calcola i saldi aggregati per mese
+function calculateMonthlyBalances() {
+    const monthlyData = {};
+
+    transactions.forEach(t => {
+        // Supponiamo che la colonna 'Data' sia sempre disponibile per le transazioni reali
+        // Qui usiamo la data corrente come fallback se la transazione non ha data
+        const date = new Date(t.date || Date.now()); 
+        
+        // Formatta come 'YYYY-MM' (es. 2025-11) per raggruppare
+        const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        
+        if (!monthlyData[yearMonth]) {
+            monthlyData[yearMonth] = {
+                income: 0,
+                expense: 0,
+                balance: 0
+            };
+        }
+
+        const amount = parseFloat(t.amount);
+        
+        if (amount > 0) {
+            monthlyData[yearMonth].income += amount;
+        } else {
+            monthlyData[yearMonth].expense += amount;
+        }
+        monthlyData[yearMonth].balance += amount;
+    });
+
+    // Trasforma l'oggetto in un array ordinato per Chart.js
+    return Object.keys(monthlyData)
+        .sort()
+        .map(key => ({
+            month: key,
+            balance: monthlyData[key].balance.toFixed(2)
+        }));
+}
+
+function renderMonthlyChart() {
+    const data = calculateMonthlyBalances();
+    const ctx = document.getElementById('monthlyChart').getContext('2d');
+
+    // Se esiste una vecchia istanza del grafico, distruggila prima di crearne una nuova
+    if (monthlyChartInstance) {
+        monthlyChartInstance.destroy();
+    }
+    
+    // Mappa i dati per Chart.js
+    const labels = data.map(item => item.month);
+    const balances = data.map(item => item.balance);
+
+    monthlyChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Saldo Mensile',
+                data: balances,
+                backgroundColor: balances.map(b => b >= 0 ? '#2ecc71' : '#e74c3c'), // Verde o Rosso
+                borderColor: '#333',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Saldo (€)'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Mese'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                },
+                title: {
+                    display: true,
+                    text: 'Bilancio Mensile Aggregato'
+                }
+            }
+        }
+    });
+}
+
+
 // Ridisegna completamente l'interfaccia
 function updateUI() {
     list.innerHTML = ''; // Svuota la lista
     transactions.forEach(addTransactionDOM);
     updateValues();
+    renderMonthlyChart();
 }
