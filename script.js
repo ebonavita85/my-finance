@@ -125,7 +125,20 @@ async function saveTransactionToSheets(transaction) {
         insertDataOption: 'INSERT_ROWS',
         resource: body
     }).then((response) => {
-        console.log('Transazione salvata:', response.result);
+        console.log('Transazione salvata:', response.result);  
+        const updatedRange = response.result.updates.updatedRange; // Es. "Foglio1!A5:D5"
+        const rowMatch = updatedRange.match(/A(\d+):/); // Estrai il numero dopo A
+        
+        if (rowMatch && rowMatch[1]) {
+            const newRow = parseInt(rowMatch[1], 10);
+            // Aggiorna la transazione nell'array locale con il suo sheetRow
+            const localTransaction = transactions.find(t => t.id === transaction.id);
+            if (localTransaction) {
+                localTransaction.sheetRow = newRow;
+                console.log(`Assegnata riga ${newRow} alla transazione locale.`);
+            }
+        }
+        
     }, (error) => {
         console.error('Errore nel salvataggio su Sheets:', error);
     });
@@ -248,6 +261,7 @@ async function loadTransactionsFromSheets() {
                 const type = row[3] ? row[3].toLowerCase() : 'expense'; // Tipo è nella colonna D (indice 3)
                 
                 return {
+                    sheetRow: 2 + index, 
                     // Usiamo index come ID temporaneo. In produzione è meglio un ID univoco.
                     id: index + 1, 
                     description: row[1] || 'N/D',
