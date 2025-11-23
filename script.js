@@ -363,13 +363,56 @@ function updateValues() {
 }
 
 // Rimuove una transazione
-function removeTransaction(id) {
+/*function removeTransaction(id) {
     transactions = transactions.filter(transaction => transaction.id !== id);
     updateUI();
     
     // NOTA: Implementare qui l'eliminazione da Google Sheets.
     console.log(`Simulazione: Transazione con ID ${id} eliminata. (Implementare DELETE/UPDATE su Sheets)`);
+}*/
+
+
+async function removeTransaction(id) {
+    const transactionToRemove = transactions.find(t => t.id === id);
+    
+    if (!transactionToRemove) return;
+
+    // 1. Ottieni la riga del foglio e l'ID del foglio
+    const sheetRow = transactionToRemove.sheetRow;
+    const sheetId = await getOrCreateSheetId();
+
+    if (!sheetId || !sheetRow) {
+        alert("Errore: Impossibile identificare la riga del foglio per l'eliminazione.");
+        return;
+    }
+
+    // 2. Determina l'intervallo da cancellare (ad esempio, A2:D2)
+    // Usiamo il numero di riga salvato da loadTransactionsFromSheets()
+    const rangeToDelete = `Foglio1!A${sheetRow}:D${sheetRow}`;
+
+    try {
+        // 3. Cancella i valori in quell'intervallo
+        await gapi.client.sheets.spreadsheets.values.clear({
+            spreadsheetId: sheetId,
+            range: rangeToDelete
+        });
+        
+        console.log(`✅ Riga ${sheetRow} cancellata su Google Sheets.`);
+
+    } catch (error) {
+        console.error("❌ Errore nell'eliminazione su Sheets:", error);
+        alert("Errore nel tentativo di eliminare la riga su Google Sheets.");
+        return; // Non rimuove localmente se fallisce l'API
+    }
+
+    // 4. Rimuovi la transazione dalla lista locale (solo se l'API ha avuto successo)
+    transactions = transactions.filter(transaction => transaction.id !== id);
+    
+    // 5. Aggiorna l'interfaccia (il grafico e la lista)
+    updateUI();
 }
+
+
 
 // Funzione: Calcola i saldi aggregati per mese
 function calculateMonthlyBalances() {
