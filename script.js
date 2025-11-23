@@ -255,22 +255,44 @@ async function loadTransactionsFromSheets() {
         const rows = response.result.values;
         
         if (rows && rows.length) {
-            // Trasforma i dati in righe nell'oggetto 'transactions'
-            transactions = rows.map((row, index) => {
-                const amount = parseFloat(row[2]); // L'importo è nella colonna C (indice 2)
-                const type = row[3] ? row[3].toLowerCase() : 'expense'; // Tipo è nella colonna D (indice 3)
+            const cleanRows = rows.filter(row => 
+                // Considera la riga non vuota se la colonna Descrizione (indice 1)
+                // O la colonna Importo (indice 2) NON sono vuote.
+                // Usiamo un controllo robusto: la stringa è vuota o contiene solo spazi.
+                (row[1] && row[1].trim() !== '') || (row[2] && row[2].trim() !== '')
+            );
+
+            transactions = cleanRows.map((row, index) => {
+                const amount = parseFloat(row[2]); 
+                const type = row[3] ? row[3].toLowerCase() : 'expense';
+                
+                // Per un caricamento sicuro: riassegnare un sheetRow *solo* per le righe pulite.
+                // Il vero numero di riga nel foglio Google è:
+                // START_ROW (2) + l'indice della riga NELL'ARRAY ORIGINALE 'rows'
+                
+                // NOTA: Se si filtra, non possiamo usare l'indice filtrato, 
+                // altrimenti il sheetRow non corrisponde. Dobbiamo iterare sull'array originale 
+                // e mappare solo le righe NON vuote mantenendo il loro indice originale.
+                
+                // Approccio più sicuro: Usare l'indice filtrato per l'ID locale, ma 
+                // dobbiamo accettare che il sheetRow non è più preciso se hai eliminato righe 
+                // e poi ne hai aggiunte altre a mano nel foglio.
+                
+                // Poiché la nostra logica di eliminazione si basa sul sheetRow, 
+                // per semplicità MANTENIAMO la mappatura originale (rows.map) 
+                // e aggiungiamo il filtro.
                 
                 return {
-                    sheetRow: 2 + index, 
-                    // Usiamo index come ID temporaneo. In produzione è meglio un ID univoco.
-                    id: index + 1, 
-                    description: row[1] || 'N/D',
-                    amount: amount, // L'importo deve già essere negativo per le uscite
-                    type: type, 
+                    sheetRow: 2 + rows.indexOf(row), // Trova l'indice corretto nell'array non filtrato
+                    id: index + 1, // ID temporaneo locale
+                    description: row[1] || 'N/D', // Sarà N/D se la cella era vuota
+                    amount: amount, 
+                    type: type,
                     date: row[0]
                 };
             });
-            console.log(`✅ Caricati ${transactions.length} transazioni da Sheets.`);
+            console.log(`✅ Caricati ${transactions.length} transazioni (dopo il filtro).`);
+            
         } else {
             console.log('Foglio vuoto: Nessuna transazione trovata.');
             transactions = [];
