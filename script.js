@@ -252,7 +252,8 @@ async function loadTransactionsFromSheets() {
                     id: index + 1, 
                     description: row[1] || 'N/D',
                     amount: amount, // L'importo deve già essere negativo per le uscite
-                    type: type
+                    type: type, 
+                    date: row[0]
                 };
             });
             console.log(`✅ Caricati ${transactions.length} transazioni da Sheets.`);
